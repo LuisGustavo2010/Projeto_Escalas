@@ -1,0 +1,2 @@
+# Projeto_Escalas
+Gostaríamos de compartilhar um projeto que fizemos para gerar escalas de trabalho, esperamos auxiliar diversos profissionais com esta planilha.   O nosso amigo nos pediu uma planilha que pudesse gerar a escala de trabalho do ano de seu departamento, porque a administração disponibiliza apenas a escala do mês. Deste modo, fizemos uma planilha automatizada com VBA para gerar as duas principais escalas que ele utiliza, sendo uma baseada em 5x1, 6x1 e 12x36.
