@@ -1,0 +1,256 @@
+MODULO 1
+
+Public Pfolga As String
+Public Nescala As String
+Dim rng As Range
+
+'DESENVOLVIDO POR:
+'Alfredo de Morais - https://github.com/alfmorais
+'Luis Gustavo - https://www.linkedin.com/in/luisgustavo2019 * https://github.com/LuisGustavo2010
+'Francisco Américo - www.linkedin.com/in/franciscoamrco
+
+Sub Abrir()
+    frmPrincipal.Show vbModeless
+End Sub
+
+Sub Limpar()
+    Columns("C:XFD").Select
+        Selection.Delete Shift:=xlToLeft
+    Rows("4:1048576").Select
+        Selection.Delete Shift:=xlUp
+    Range("A1:A2").Value = ""
+    Range("B1").Value = ""
+    Range("B1").Select
+    frmPrincipal.txtNome.Text = ""
+    frmPrincipal.txtHorario.Text = ""
+    frmPrincipal.txtPFolga.Text = ""
+End Sub
+
+Sub DesabilitarEventos()
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
+End Sub
+
+Sub HabilitarEventos()
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.EnableEvents = True
+End Sub
+
+Sub GerarCalendario()
+    Call DesabilitarEventos
+    
+    If Range("C3").Value <> "" Then
+        Call Limpar
+    End If
+    
+    Range("A1:A2").Value = "01/01/" & frmPrincipal.lstAno.Text
+    Range("A2").Value = "01/01/" & frmPrincipal.lstAno.Text + 1
+    Sheets("Escala").Select
+    Range("C3").Value = Range("A1").Value
+    DataFim = Range("A2").Value
+    
+    Range("B1").Value = Range("C3").Value
+    Range("D3").Select
+    Range("C2").FormulaR1C1 = "=LEFT(PROPER(TEXT(WEEKDAY(R[1]C,1),""ddd"")),1)"
+    
+    Do While ActiveCell.Offset(0, -1).Value < DataFim
+        ActiveCell.Value = ActiveCell.Offset(0, -1).Value + 1
+        ActiveCell.Offset(-1, 0).FormulaR1C1 = "=LEFT(PROPER(TEXT(WEEKDAY(R[1]C,1),""ddd"")),1)"
+        ActiveCell.Offset(0, 1).Select
+    Loop
+    ActiveCell.Offset(0, -1).Select
+    Selection.EntireColumn.Delete
+        
+    Range("C3").Select
+        Range(Selection, Selection.End(xlToRight)).Select
+        Selection.NumberFormat = "dd/mm"
+    
+    Range("C2").Select
+        Range(Selection, Selection.End(xlDown)).Select
+        Range(Selection, Selection.End(xlToRight)).Select
+        Selection.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+        Selection.Borders(xlInsideVertical).LineStyle = xlContinuous
+        Selection.Borders(xlEdgeTop).LineStyle = xlContinuous
+        Selection.Borders(xlEdgeRight).LineStyle = xlContinuous
+    
+    Range("C3").Select
+    Do While ActiveCell.Value <> ""
+        If Day(ActiveCell.Value) = 1 Then
+            ActiveCell.Offset(-2, 0) = UCase(WorksheetFunction.Text(ActiveCell.Value, "mmm"))
+        End If
+        ActiveCell.Offset(0, 1).Select
+    Loop
+    
+    Range("C2").Select
+        Selection.End(xlToRight).Select
+        ActiveCell.Offset(-1, 0).Select
+        Range(Selection, Cells(ActiveCell.Row, 1)).Select
+        
+    For Each rng In Selection
+        If rng <> "" Then
+            rng.Value = Replace(rng.Value, "FEB", "FEV")
+            rng.Value = Replace(rng.Value, "APR", "ABR")
+            rng.Value = Replace(rng.Value, "MAY", "MAI")
+            rng.Value = Replace(rng.Value, "AUG", "AGO")
+            rng.Value = Replace(rng.Value, "SEP", "SET")
+            rng.Value = Replace(rng.Value, "OCT", "OUT")
+            rng.Value = Replace(rng.Value, "DEC", "DEZ")
+        End If
+    Next rng
+    
+    Range("C3").Select
+    Call HabilitarEventos
+End Sub
+
+Sub Cadastrar()
+    Call DesabilitarEventos
+    
+    If frmPrincipal.lstAno.Text = "" Then
+        MsgBox ("Ano não selecionado"), vbExclamation
+        Exit Sub
+    End If
+    If frmPrincipal.txtNome.Text = "" Then
+        MsgBox ("Inserir um nome"), vbExclamation
+        Exit Sub
+    End If
+    If frmPrincipal.txtPFolga.Text = "" Then
+        MsgBox ("Data da primeira folga não encontrada"), vbExclamation
+        Exit Sub
+    End If
+    If frmPrincipal.lstEscala.Text = "" Then
+        MsgBox ("Escala não selecionada"), vbExclamation
+        Exit Sub
+    End If
+    
+    Pfolga = Format(frmPrincipal.txtPFolga.Text, "DD/MM/YYYY")
+    Range("C3").Select
+    If Range("C3").Value <> Pfolga Then
+        Do While ActiveCell.Value <> Pfolga
+            If ActiveCell.Value = "" Then
+                MsgBox ("Data não encontrada"), vbCritical
+                Exit Sub
+            End If
+            ActiveCell.Offset(0, 1).Select
+        Loop
+        Rows("4:4").Insert Shift:=xlDown, CopyOrigin:=xlFormatFromRightOrBelow
+        ActiveCell.Offset(1, 0).Select
+        ActiveCell.Value = "F"
+    Else:
+        Rows("4:4").Insert Shift:=xlDown, CopyOrigin:=xlFormatFromRightOrBelow
+        ActiveCell.Offset(1, 0).Select
+        ActiveCell.Value = "F"
+    End If
+    
+    Range("A4").Value = frmPrincipal.txtNome.Value
+    Range("B4").Value = frmPrincipal.txtHorario.Value
+    frmPrincipal.txtNome.Value = ""
+    frmPrincipal.txtHorario.Value = ""
+    frmPrincipal.txtPFolga = ""
+    Call GerarFolgas
+    Call FormatarCadastro
+    Call HabilitarEventos
+End Sub
+
+Sub GerarFolgas()
+    Pescala = frmPrincipal.lstEscala.Text
+    
+    Select Case Pescala
+        Case Is = "5x1"
+            NFolgas = 5
+        Case Is = "6x1"
+            NFolgas = 6
+        Case Is = "12x36"
+            NFolgas = 2
+    End Select
+    
+    Do While ActiveCell.Offset(-1, 0) <> ""
+        ActiveCell.Offset(0, NFolgas).Select
+        ActiveCell.Value = "F"
+        If ActiveCell.Offset(-1, 0) = "" Then
+            ActiveCell.Value = ""
+        End If
+    Loop
+End Sub
+
+Sub FormatarCadastro()
+    Range("C3").Select
+        Selection.End(xlToRight).Select
+        ActiveCell.Offset(1, 0).Select
+    Range("A4", ActiveCell).Select
+        Range(Selection, Selection.End(xlToLeft)).Select
+        Selection.Borders(xlInsideHorizontal).LineStyle = xlContinuous
+        Selection.Borders(xlInsideVertical).LineStyle = xlContinuous
+        Selection.Borders(xlEdgeTop).LineStyle = xlContinuous
+        Selection.Borders(xlEdgeRight).LineStyle = xlContinuous
+        Selection.Borders(xlEdgeLeft).LineStyle = xlContinuous
+        Selection.Borders(xlEdgeBottom).LineStyle = xlContinuous
+    Range("C3").Select
+End Sub
+
+FORMULÁRIO
+Private Sub cmdCadastrar_Click()
+    Call Cadastrar
+    Me.txtNome.SetFocus
+End Sub
+
+Private Sub cmdLimpar_Click()
+    Call Limpar
+    Me.lstAno.ListIndex = -1
+    Me.lstEscala.ListIndex = -1
+End Sub
+
+Private Sub cmdsfechar_Click()
+    'Propriedade Cancel para True
+    Unload Me
+End Sub
+
+Private Sub lstAno_Click()
+    Call GerarCalendario
+End Sub
+
+Private Sub txtHorario_Change()
+    Me.txtHorario.Text = LCase(Me.txtHorario.Text)
+End Sub
+
+Private Sub txtHorario_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+'    If Not IsNumeric(Chr(KeyAscii.Value)) Or Len(Me.txtHorario.Text) >= 5 Then
+'        KeyAscii.Value = 0
+'    Else
+'        If Len(Me.txtHorario.Text) = 2 Then
+'            Me.txtHorario.Text = Me.txtHorario.Text & ":"
+'        End If
+'    End If
+End Sub
+
+Private Sub txtNome_Change()
+    Me.txtNome.Text = UCase(Me.txtNome.Text)
+    SendKeys "{NUMLOCK}", True
+    SendKeys "{NUMLOCK}", True
+End Sub
+
+Private Sub txtPFolga_AfterUpdate()
+    Me.txtPFolga.Text = Format(frmPrincipal.txtPFolga.Text, "dd/mm/yyyy")
+End Sub
+
+Private Sub UserForm_Initialize()
+    Me.lstAno.AddItem Year(Now) - 1
+    Me.lstAno.AddItem Year(Now)
+    Me.lstAno.AddItem Year(Now) + 1
+    
+    Me.lstEscala.AddItem "5x1"
+    Me.lstEscala.AddItem "6x1"
+    Me.lstEscala.AddItem "12x36"
+    
+    Me.cmdsfechar.Cancel = True
+End Sub
+
+Private Sub txtPFolga_Change()
+    If Len(txtPFolga) = 2 Or Len(txtPFolga) = 5 Then
+        txtPFolga.Text = txtPFolga.Text & "/"
+        SendKeys "{End}", True
+        SendKeys "{NUMLOCK}", True
+        SendKeys "{NUMLOCK}", True
+    End If
+End Sub
